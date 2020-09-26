@@ -1,10 +1,14 @@
-(defpackage #:sodium
+(defpackage :sodium
   (:use :cl :cffi)
   (:nicknames :cr))
 
-(defpackage #:sodium.accessors
+(defpackage :sodium.accessors
   (:use :cl :cffi :sodium)
   (:nicknames :cr-a))
+
+(defpackage :sodium.high-level
+  (:use :cl :cffi)
+  (:nicknames :cr-hl))
 
 (in-package :sodium)
 
