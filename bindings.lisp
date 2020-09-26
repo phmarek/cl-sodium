@@ -165,13 +165,13 @@
 
 (cffi:defcfun ("crypto_box_seedbytes" #.(lispify "crypto_box_seedbytes" 'function)) :pointer)
 
-(cffi:defcfun ("crypto_box_publickeybytes" #.(lispify "crypto_box_publickeybytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_box_publickeybytes" #.(lispify "crypto_box_publickeybytes" 'function)) :unsigned-long-long)
 
-(cffi:defcfun ("crypto_box_secretkeybytes" #.(lispify "crypto_box_secretkeybytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_box_secretkeybytes" #.(lispify "crypto_box_secretkeybytes" 'function)) :unsigned-long-long)
 
-(cffi:defcfun ("crypto_box_noncebytes" #.(lispify "crypto_box_noncebytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_box_noncebytes" #.(lispify "crypto_box_noncebytes" 'function)) :unsigned-long-long)
 
-(cffi:defcfun ("crypto_box_macbytes" #.(lispify "crypto_box_macbytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_box_macbytes" #.(lispify "crypto_box_macbytes" 'function)) :unsigned-long-long)
 
 (cffi:defcfun ("crypto_box_messagebytes_max" #.(lispify "crypto_box_messagebytes_max" 'function)) :pointer)
 
@@ -872,11 +872,11 @@
   (q :pointer)
   (n :pointer))
 
-(cffi:defcfun ("crypto_secretbox_keybytes" #.(lispify "crypto_secretbox_keybytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_secretbox_keybytes" #.(lispify "crypto_secretbox_keybytes" 'function)) :unsigned-long-long)
 
-(cffi:defcfun ("crypto_secretbox_noncebytes" #.(lispify "crypto_secretbox_noncebytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_secretbox_noncebytes" #.(lispify "crypto_secretbox_noncebytes" 'function)) :unsigned-long-long)
 
-(cffi:defcfun ("crypto_secretbox_macbytes" #.(lispify "crypto_secretbox_macbytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_secretbox_macbytes" #.(lispify "crypto_secretbox_macbytes" 'function)) :unsigned-long-long)
 
 (define-string #.(lispify "crypto_secretbox_PRIMITIVE" 'constant) "xsalsa20poly1305")
 
@@ -1186,7 +1186,7 @@
 
 (cffi:defcfun ("crypto_stream_keybytes" #.(lispify "crypto_stream_keybytes" 'function)) :pointer)
 
-(cffi:defcfun ("crypto_stream_noncebytes" #.(lispify "crypto_stream_noncebytes" 'function)) :pointer)
+(cffi:defcfun ("crypto_stream_noncebytes" #.(lispify "crypto_stream_noncebytes" 'function)) :unsigned-long-long)
 
 (cffi:defcfun ("crypto_stream_messagebytes_max" #.(lispify "crypto_stream_messagebytes_max" 'function)) :pointer)
 
@@ -1440,7 +1440,7 @@
 
 (cffi:defcfun ("randombytes_buf" #.(lispify "randombytes_buf" 'function)) :void
   (buf :pointer)
-  (size :pointer))
+  (size :unsigned-long-long))
 
 (cffi:defcfun ("randombytes_buf_deterministic" #.(lispify "randombytes_buf_deterministic" 'function)) :void
   (buf :pointer)
@@ -1494,7 +1494,7 @@
 
 (cffi:defcfun ("sodium_memzero" #.(lispify "sodium_memzero" 'function)) :void
   (pnt :pointer)
-  (len :pointer))
+  (len :unsigned-long-long))
 
 (cffi:defcfun ("sodium_stackzero" #.(lispify "sodium_stackzero" 'function)) :void
   (len :pointer))
