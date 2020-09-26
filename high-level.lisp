@@ -90,7 +90,7 @@
                    do (setf (cffi:mem-aref ,name :uchar ,i)
                             ,val)
                    do (incf ,i))
-             #-(or)
+             #+(or)
              (format t "~s: ~a~&" ',name
                      (foreign-memory-as-hex-string ,name ,len%))
              (unwind-protect
