@@ -5,7 +5,8 @@
   :description "A wrapper around libsodium, providing easy, correct, safe crypto for common lisp."
   :depends-on (#:cffi
                #:alexandria
-               #:ironclad)
+               #:ironclad
+               #:fiveam)
   :components ((:file "sodium")
                (:file "wrapper" :depends-on ("sodium"))
                (:file "bindings" :depends-on ("wrapper"))

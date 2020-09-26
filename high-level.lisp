@@ -202,62 +202,65 @@
 
 
 #+(or)
-(string= "cccc614230cccccc"
-         (with-foreign-bytes (x "aB0" :len 8 :start 2 :initial-element #xcc)
-           (foreign-memory-as-hex-string x 8)))
+(setf fiveam:*on-error* :debug
+      fiveam:*run-test-when-defined* t)
+
+(fiveam:def-test basic-conversions ()
+  (fiveam:is (string= "cccc614230cccccc"
+                      (with-foreign-bytes (x "aB0" :len 8 :start 2 :initial-element #xcc)
+                        (foreign-memory-as-hex-string x 8))))
+  (fiveam:is (string= "080706cc"
+                      (with-foreign-bytes (x (vector 8 7 6) :len 4 :initial-element #xcc)
+                        (foreign-memory-as-hex-string x 4))))
+  (fiveam:is (string= "cccccccc01234567"
+                      (with-foreign-bytes (x '(:hex "0123456789abcdef")
+                                             :len-sym my-len
+                                             :len 8 
+                                             :start 4 
+                                             :initial-element #xcc)
+                        (foreign-memory-as-hex-string x 8)))))
+
+
+(fiveam:def-test symmetric-enc-dec ()
+  (let ((key '(:hex "0301010101010101010201010101010101010101010101010101010101010101"))
+        (msg "Here I am"))
+    (fiveam:is (equal (list msg (length msg))
+                      (multiple-value-list
+                        (symmetrically-encrypt
+                          msg
+                          key 
+                          '(:hex "aa")
+                          (lambda (enc enc-len nonce nonce-len)
+                            (symmetrically-decrypt
+                              (list :hex
+                                    (foreign-memory-as-hex-string enc enc-len))
+                              key
+                              (list :hex
+                                    (foreign-memory-as-hex-string nonce nonce-len))
+                              (lambda (msg msg-len)
+                                (foreign-memory-as-string msg msg-len))))))))))
+
+
+(fiveam:def-test asymm-enc-dec ()
+  (let ((pub '(:hex "0301010101010101010201010101010101010101010101010101010101010108"))
+        (priv '(:hex "0401010201010101010201010101010101010101010101010101010101010109"))
+        (msg "Here I am"))
+    (fiveam:is (equal (list msg (length msg))
+                      (multiple-value-list
+                        (priv-pubkey-encrypt
+                          msg
+                          priv pub
+                          #(128 #x40 33)
+                          (lambda (enc enc-len nonce nonce-len)
+                            (priv-pubkey-decrypt
+                              (list :hex
+                                    (foreign-memory-as-hex-string enc enc-len))
+                              priv 
+                              pub
+                              (list :hex
+                                    (foreign-memory-as-hex-string nonce nonce-len))
+                              (lambda (msg msg-len)
+                                (foreign-memory-as-string msg msg-len))))))))))
 
 #+(or)
-(string= "080706cc"
-         (with-foreign-bytes (x (vector 8 7 6) :len 4 :initial-element #xcc)
-           (foreign-memory-as-hex-string x 4)))
-
-#+(or)
-(string= "cccccccc01234567"
-         (with-foreign-bytes (x '(:hex "0123456789abcdef")
-                                :len-sym my-len
-                                :len 8 
-                                :start 4 
-                                :initial-element #xcc)
-           (foreign-memory-as-hex-string x 8)))
-
-
-#+(or)
-(let ((key '(:hex "0301010101010101010201010101010101010101010101010101010101010101"))
-      (msg "Here I am"))
-  (equal (list msg (length msg))
-         (multiple-value-list
-           (symmetrically-encrypt
-             msg
-             key 
-             '(:hex "aa")
-             (lambda (enc enc-len nonce nonce-len)
-               (symmetrically-decrypt
-                 (list :hex
-                       (foreign-memory-as-hex-string enc enc-len))
-                 key
-                 (list :hex
-                       (foreign-memory-as-hex-string nonce nonce-len))
-                 (lambda (msg msg-len)
-                   (foreign-memory-as-string msg msg-len))))))))
-
-
-#+(or)
-(let ((pub '(:hex "0301010101010101010201010101010101010101010101010101010101010108"))
-      (priv '(:hex "0401010201010101010201010101010101010101010101010101010101010109"))
-      (msg "Here I am"))
-  (equal (list msg (length msg))
-         (multiple-value-list
-           (priv-pubkey-encrypt
-             msg
-             priv pub
-             #(128 #x40 33)
-             (lambda (enc enc-len nonce nonce-len)
-               (priv-pubkey-decrypt
-                 (list :hex
-                       (foreign-memory-as-hex-string enc enc-len))
-                 priv 
-                 pub
-                 (list :hex
-                       (foreign-memory-as-hex-string nonce nonce-len))
-                 (lambda (msg msg-len)
-                   (foreign-memory-as-string msg msg-len))))))))
+(fiveam:run-all-tests)
