@@ -2,7 +2,11 @@
 
 
 ;; Tries to bridge the FFI canyon.
-;; Input data can be a UB8 vector, a string, or a hex string via (:HEX "cafe")
+;; Input data can be 
+;; - a UB8 vector, 
+;; - a string, 
+;; - a hex string via (:HEX "cafe"),
+;; - another foreign pointer via (:FOREIGN ptr len)
 
 
 (declaim (inline copy-to-foreign-fn))
@@ -33,8 +37,9 @@
                              (char-code (aref input p))
                            (incf p))
                          initial-element))))))
-    ;; TODO: allow (:foreign <pointer> <len>) as well to pass data directly on
     ;; TODO: allow bignums for priv/pub keys? Needs a :be/:le spec, and a size for messages
+    ;; TODO: allow (:pub-key <pointer>), (:priv-key <pointer>), (:sec-key <pointer>)?
+    ;; Make that a generic already?
     (cond
       ((null input)
        (values 0
@@ -44,11 +49,18 @@
        (copy-stg input))
       ((vectorp input)
        (copy-ub8 input))
-      ((and (consp input)
-            (eq :hex (first input))
-            (stringp (second input))
-            (= 2 (length input)))
-       (copy-ub8 (ironclad:hex-string-to-byte-array (second input))))
+      ((consp input)
+       (ecase (first input)
+         (:hex
+          (destructuring-bind (hex) (rest input)
+            (assert (stringp hex))
+            (copy-ub8 (ironclad:hex-string-to-byte-array hex))))
+         ;; (:foreign <pointer> <len>) to pass data directly on
+         (:foreign
+          (destructuring-bind (ptr len) (rest input)
+            (assert (typep ptr 'cffi:foreign-pointer))
+            (assert (integerp len))
+            (values len ptr)))))
       (T
        (error "bad INPUT type")))))
 
@@ -64,39 +76,45 @@
   After BODY the foreign buffer is cleared."
   (check-type name symbol)
   (alexandria:once-only (source len initial-element start req-input-len string-padding?)
-    (alexandria:with-gensyms (i fn val input-len start% len%)
+    (alexandria:with-gensyms (i fn val input-len start% len% thunk)
       `(multiple-value-bind (,input-len ,fn)
            (copy-to-foreign-fn ,source (or ,initial-element 0) ,string-padding?)
          (when (and ,req-input-len
                     (/= ,input-len ,req-input-len))
            (error "Bad input length ~d for ~s, ~d bytes are required"
                   ,input-len ',name ,req-input-len))
-         (let* ((,i 0)
-                (,start% (or ,start 0))
-                ;; internal symbol
-                (,len% (or ,len
-                           (+ ,start% ,input-len)))
-                ;; externally visible
-                (,len-sym ,len%))
-           (declare (ignorable ,len-sym))
-           (cffi:with-foreign-object (,name 
-                                       `(:array :uchar ,,len%))
-             (loop while (< ,i ,start%)
-                   do (setf (cffi:mem-aref ,name :uchar ,i)
-                            ,initial-element)
-                   do (incf ,i))
-             (loop while (< ,i ,len%)
-                   for ,val = (funcall ,fn)
-                   do (setf (cffi:mem-aref ,name :uchar ,i)
-                            ,val)
-                   do (incf ,i))
-             #+(or)
-             (format t "~s: ~a~&" ',name
-                     (foreign-memory-as-hex-string ,name ,len%))
-             (unwind-protect
-                 (progn ,@ body)
-               ;; Use the internal length, in case the user-visible one was changed.
-               (sodium::sodium-memzero ,name ,len%))))))))
+         (flet ((,thunk (,name ,len-sym)
+                  (declare (ignorable ,len-sym))
+                  ,@ body))
+           (let* ((,i 0)
+                  (,start% (or ,start 0))
+                  ;; internal symbol
+                  (,len% (or ,len
+                             (+ ,start% ,input-len))))
+             (cond
+               ((typep ,fn 'cffi:foreign-pointer)
+                ;; Already a foreign pointer, no need to copy data around.
+                ;; TODO: use unwind-protect all the same??
+                (,thunk ,fn ,len%))
+               (t
+                (cffi:with-foreign-object (,name 
+                                            `(:array :uchar ,,len%))
+                  (loop while (< ,i ,start%)
+                        do (setf (cffi:mem-aref ,name :uchar ,i)
+                                 ,initial-element)
+                        do (incf ,i))
+                  (loop while (< ,i ,len%)
+                        for ,val = (funcall ,fn)
+                        do (setf (cffi:mem-aref ,name :uchar ,i)
+                                 ,val)
+                        do (incf ,i))
+                  #-(or)
+                  (format *trace-output* "~s: ~a~&" ',name
+                          (foreign-memory-as-hex-string ,name ,len%))
+                  (unwind-protect
+                      (,thunk ,name ,len%)
+                    ;; Use the internal length, in case the user-visible one was changed.
+                    (sodium::sodium-memzero ,name ,len%)))))))))))
 
 
 (defun foreign-memory-as-string (address &optional len)
