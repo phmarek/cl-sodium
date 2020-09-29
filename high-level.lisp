@@ -128,6 +128,15 @@
                                 `(:array :uchar , len)
                                 :element-type '(unsigned-byte 8))))
 
+(defun foreign-memory-as-b64-string (address len)
+  "Pure dump function."
+  (base64:string-to-base64-string 
+    (cffi:foreign-array-to-lisp address
+                                `(:array :uchar , len)
+                                :element-type '(unsigned-byte 8))))
+
+
+
 
 (defun symmetrically-encrypt (message key nonce fn)
   "Runs FN with the encrypted message, its length, the nonce, and its length,
@@ -269,6 +278,7 @@
            symmetrically-encrypt
            symmetrically-decrypt
            foreign-memory-as-hex-string
+           foreign-memory-as-b64-string
            foreign-memory-as-string))
 
 
