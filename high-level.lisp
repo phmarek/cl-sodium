@@ -201,6 +201,60 @@
                   (error "Can't decrypt")))))))))
 
 
+(defun with-new-asymm-keypair% (fn)
+  "Generate a new random keypair, and run FN with 
+  the private part (as foreign pointer), its length, and
+  the public part (as foreign pointer), and its length."
+  (with-foreign-bytes (pub nil :len (sodium:crypto-box-publickeybytes))
+    (with-foreign-bytes (sec nil :len (sodium:crypto-box-secretkeybytes))
+      (sodium:crypto-box-keypair pub sec)
+      (funcall fn 
+               sec (sodium:crypto-box-secretkeybytes)
+               pub (sodium:crypto-box-publickeybytes)))))
+
+
+(defun with-new-symmetric-key% (fn)
+  "Generate a new random key, and run FN with 
+  the key (as foreign pointer), and its length."
+  (with-foreign-bytes (sec nil :len (sodium:crypto-secretbox-keybytes))
+    (sodium:crypto-secretbox-keygen sec)
+    (funcall fn 
+             sec (sodium:crypto-box-secretkeybytes))))
+
+(defmacro with-new-symmetric-key ((key-sym &optional (key-len-sym (gensym "L"))) 
+                              &body body)
+  `(with-new-symmetric-key% 
+     (lambda (,key-sym ,key-len-sym)
+       (declare (ignorable ,key-len-sym))
+       ,@ body)))
+
+(defmacro with-new-asymmetric-keypair ((priv-key-sym pub-key-sym &optional pr-len-sym pb-len-sym)
+                                   &body body)
+  (check-type priv-key-sym symbol)
+  (check-type pub-key-sym symbol)
+  (if pr-len-sym
+      (check-type pr-len-sym symbol)
+      (setf pr-len-sym (gensym)))
+  (if pb-len-sym
+      (check-type pb-len-sym symbol)
+      (setf pb-len-sym (gensym)))
+  `(with-new-asymm-keypair% 
+     (lambda (,priv-key-sym ,pr-len-sym ,pub-key-sym ,pb-len-sym)
+       (declare (ignorable ,pb-len-sym ,pr-len-sym))
+       ,@ body)))
+
+
+(export '(with-new-asymmetric-keypair   
+           with-new-symmetric-key
+           priv-pubkey-encrypt
+           priv-pubkey-decrypt
+           symmetrically-encrypt
+           symmetrically-decrypt
+           foreign-memory-as-hex-string
+           foreign-memory-as-string))
+
+
+
 #+(or)
 (setf fiveam:*on-error* :debug
       fiveam:*run-test-when-defined* t)
