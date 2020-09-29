@@ -287,6 +287,7 @@
 (setf fiveam:*on-error* :debug
       fiveam:*run-test-when-defined* t)
 
+#+(or)
 (fiveam:def-test basic-conversions ()
   (fiveam:is (string= "cccc614230cccccc"
                       (with-foreign-bytes (x "aB0" :len 8 :start 2 :initial-element #xcc)
@@ -303,6 +304,7 @@
                         (foreign-memory-as-hex-string x 8)))))
 
 
+#+(or)
 (fiveam:def-test symmetric-enc-dec ()
   (let ((key '(:hex "0301010101010101010201010101010101010101010101010101010101010101"))
         (msg "Here I am"))
@@ -323,6 +325,7 @@
                                 (foreign-memory-as-string msg msg-len))))))))))
 
 
+#+(or)
 (fiveam:def-test asymm-enc-dec ()
   (let ((pub '(:hex "0301010101010101010201010101010101010101010101010101010101010108"))
         (priv '(:hex "0401010201010101010201010101010101010101010101010101010101010109"))
