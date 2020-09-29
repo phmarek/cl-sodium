@@ -77,15 +77,18 @@
   (check-type name symbol)
   (alexandria:once-only (source len initial-element start req-input-len string-padding?)
     (alexandria:with-gensyms (i fn val input-len start% len% thunk)
-      `(multiple-value-bind (,input-len ,fn)
-           (copy-to-foreign-fn ,source (or ,initial-element 0) ,string-padding?)
-         (when (and ,req-input-len
-                    (/= ,input-len ,req-input-len))
-           (error "Bad input length ~d for ~s, ~d bytes are required"
-                  ,input-len ',name ,req-input-len))
-         (flet ((,thunk (,name ,len-sym)
-                  (declare (ignorable ,len-sym))
-                  ,@ body))
+      `(flet ((,thunk (,name ,len-sym)
+                (declare (ignorable ,len-sym))
+                ,@ body))
+         (multiple-value-bind (,input-len ,fn)
+             (copy-to-foreign-fn ,source 
+                                 (or ,initial-element 0)
+                                 ,string-padding? 
+                                 ',source)
+           (when (and ,req-input-len
+                      (/= ,input-len ,req-input-len))
+             (error "Bad input length ~d for ~s, ~d bytes are required"
+                    ,input-len ',name ,req-input-len))
            (let* ((,i 0)
                   (,start% (or ,start 0))
                   ;; internal symbol
