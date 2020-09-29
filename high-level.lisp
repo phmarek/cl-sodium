@@ -10,7 +10,7 @@
 
 
 (declaim (inline copy-to-foreign-fn))
-(defun copy-to-foreign-fn (input initial-element string-padding?)
+(defun copy-to-foreign-fn (input initial-element string-padding? name)
   "Returns the number of bytes in INPUT, and a function that
   will at first return bytes from INPUT and then INITIAL-ELEMENT."
   (flet 
@@ -62,7 +62,7 @@
             (assert (integerp len))
             (values len ptr)))))
       (T
-       (error "bad INPUT type")))))
+       (error "bad type for ~s, got ~s" name input)))))
 
 
 (defmacro with-foreign-bytes ((name source &key len start initial-element 
